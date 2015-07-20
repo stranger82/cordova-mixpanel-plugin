@@ -24,19 +24,22 @@ public class MixpanelPlugin extends CordovaPlugin {
 
         // MIXPANEL API
 
-
         ALIAS("alias"),
         FLUSH("flush"),
         IDENTIFY("identify"),
         INIT("init"),
         RESET("reset"),
         TRACK("track"),
-
+        SUPER("super"),
+        SUPER_ONCE("super_once"),
+        TIME_EVENT("time_event"),
 
         // PEOPLE API
 
-
+        PEOPLE_INCREMENT("people_increment"),
+        PEOPLE_TRACK_CHARGE("people_track_charge"),
         PEOPLE_SET("people_set"),
+        PEOPLE_INIT_PUSH_NOTIFICATIONS("people_init_push_notifications"),
         PEOPLE_IDENTIFY("people_identify");
 
         private final String name;
@@ -89,10 +92,22 @@ public class MixpanelPlugin extends CordovaPlugin {
                 return handleReset(args, cbCtx);
             case TRACK:
                 return handleTrack(args, cbCtx);
+            case TIME_EVENT:
+                return handleTimeEvent(args, cbCtx);
+            case SUPER:
+                return handleSuper(args, cbCtx);
+            case SUPER_ONCE:
+                return handleSuperOnce(args, cbCtx);
             case PEOPLE_SET:
                 return handlePeopleSet(args, cbCtx);
             case PEOPLE_IDENTIFY:
                 return handlePeopleIdentify(args, cbCtx);
+            case PEOPLE_INCREMENT:
+                return handlePeopleIncrement(args, cbCtx);
+            case PEOPLE_TRACK_CHARGE:
+                return handlePeopleTrackCharge(args, cbCtx);
+            case PEOPLE_INIT_PUSH_NOTIFICATIONS:
+                return handlePeopleInitPushNotifications(args, cbCtx);
             default:
                 this.error(cbCtx, "unknown action");
                 return false;
@@ -193,6 +208,41 @@ public class MixpanelPlugin extends CordovaPlugin {
         return true;
     }
 
+      private boolean handleTimeEvent(JSONArray args, final CallbackContext cbCtx) {
+        String event = args.optString(0, "");
+        if (TextUtils.isEmpty(event)) {
+            this.error(cbCtx, "missing event name");
+            return false;
+        }
+
+        
+        mixpanel.timeEvent(event);
+        cbCtx.success();
+        return true;
+    }
+
+     private boolean handleSuper(JSONArray args, final CallbackContext cbCtx) {
+
+        JSONObject properties = args.optJSONObject(0);
+        if (properties == null) {
+            properties = new JSONObject();
+        }
+        mixpanel.registerSuperProperties(properties);
+        cbCtx.success();
+        return true;
+    }
+
+     private boolean handleSuperOnce(JSONArray args, final CallbackContext cbCtx) {
+
+        JSONObject properties = args.optJSONObject(0);
+        if (properties == null) {
+            properties = new JSONObject();
+        }
+        mixpanel.registerSuperPropertiesOnce(properties);
+        cbCtx.success();
+        return true;
+    }
+
 
     private boolean handlePeopleIdentify(JSONArray args, final CallbackContext cbCtx) {
         String distinctId = args.optString(0, "");
@@ -205,6 +255,18 @@ public class MixpanelPlugin extends CordovaPlugin {
         return true;
     }
 
+    private boolean handlePeopleInitPushNotifications(JSONArray args, final CallbackContext cbCtx) {
+        String token = args.optString(0, "");
+        if (TextUtils.isEmpty(token)) {
+            this.error(cbCtx, "missing token");
+            return false;
+        }
+        mixpanel.getPeople().initPushHandling(token);
+        cbCtx.success();
+        return true;
+    }
+
+
 
     private boolean handlePeopleSet(JSONArray args, final CallbackContext cbCtx) {
         JSONObject properties = args.optJSONObject(0);
@@ -216,4 +278,27 @@ public class MixpanelPlugin extends CordovaPlugin {
         cbCtx.success();
         return true;
     }
+
+    private boolean handlePeopleIncrement(JSONArray args, final CallbackContext cbCtx) {
+        String incrementProperty = args.optString(0, "");
+        int incrementValue = args.optInt(1);
+        if (TextUtils.isEmpty(incrementProperty)) {
+            this.error(cbCtx, "missing increment property");
+            return false;
+        }
+        mixpanel.getPeople().increment(incrementProperty, incrementValue);
+        cbCtx.success();
+        return true;
+    }
+
+     private boolean handlePeopleTrackCharge(JSONArray args, final CallbackContext cbCtx) {
+
+        int value = args.optInt(0);
+        JSONObject properties = args.optJSONObject(1);
+      
+        mixpanel.getPeople().trackCharge(value,properties);
+        cbCtx.success();
+        return true;
+    }
+
 }
